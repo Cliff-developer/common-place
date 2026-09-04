@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Commonplace</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#2B2620">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,500&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,500;1,8..60,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #ECE4D3;
+    --card: #F5EFE1;
+    --rule: #C8BB98;
+    --ink: #2B2620;
+    --ink-soft: #6B6252;
+    --oxblood: #7C2D2D;
+    --forest: #3E5641;
+    --gold: #A9822C;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Source Serif 4', Georgia, serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 3rem 1.5rem 5rem;
+  }
+
+  header h1 {
+    font-family: 'Fraunces', serif;
+    font-weight: 500;
+    font-size: 2.4rem;
+    margin: 0 0 0.3rem;
+    letter-spacing: -0.01em;
+  }
+
+  header p.subhead {
+    margin: 0 0 2rem;
+    color: var(--ink-soft);
+    font-size: 1.02rem;
+    max-width: 46ch;
+  }
+
+  nav.tabs {
+    display: flex;
+    gap: 1.75rem;
+    border-bottom: 1px solid var(--rule);
+    margin-bottom: 1.5rem;
+  }
+
+  nav.tabs button {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.85rem;
+    background: none;
+    border: none;
+    color: var(--ink-soft);
+    padding: 0 0 0.7rem;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    cursor: pointer;
+  }
+
+  nav.tabs button.active {
+    color: var(--ink);
+    border-bottom-color: var(--gold);
+  }
+
+  .filters {
+    display: flex;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    margin-bottom: 2.25rem;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  .filters input[type=text] {
+    flex: 1;
+    min-width: 200px;
+    padding: 0.65rem 0.9rem;
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: 2px;
+    font-family: inherit;
+    font-size: 0.9rem;
+    color: var(--ink);
+  }
+
+  .filters input[type=text]:focus,
+  .filters select:focus,
+  .word-tag:focus-visible {
+    outline: 2px solid var(--gold);
+    outline-offset: 1px;
+  }
+
+  .filters select {
+    padding: 0.65rem 0.6rem;
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: 2px;
+    font-family: inherit;
+    font-size: 0.85rem;
+    color: var(--ink);
+    max-width: 220px;
+  }
+
+  .quote-card {
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-left: 4px solid var(--oxblood);
+    padding: 1.4rem 1.6rem 1.1rem;
+    margin-bottom: 1.1rem;
+    box-shadow: 3px 4px 0 rgba(43, 38, 32, 0.06);
+  }
+
+  .quote-card p.text {
+    margin: 0 0 0.9rem;
+    font-size: 1.12rem;
+    line-height: 1.6;
+  }
+
+  .quote-card .cite {
+    display: flex;
+    justify-content: flex-end;
+    border-top: 1px solid var(--rule);
+    padding-top: 0.55rem;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--ink-soft);
+  }
+
+  .vocab-group { margin-bottom: 2rem; }
+
+  .vocab-group h2 {
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-weight: 500;
+    font-size: 1.15rem;
+    margin: 0 0 0.7rem;
+    padding-bottom: 0.4rem;
+    border-bottom: 1px solid var(--rule);
+    color: var(--forest);
+  }
+
+  .word-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.55rem;
+  }
+
+  .word-tag {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.88rem;
+    padding: 0.42rem 0.85rem;
+    border: 1.3px solid var(--forest);
+    border-radius: 3px;
+    color: var(--forest);
+    background: transparent;
+    display: inline-block;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+
+  .word-tag:hover { background: var(--forest); color: var(--paper); }
+
+  .empty {
+    color: var(--ink-soft);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.9rem;
+    padding: 2rem 0;
+  }
+
+  .def-popover {
+    position: absolute;
+    z-index: 50;
+    display: none;
+    max-width: 320px;
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-left: 3px solid var(--gold);
+    box-shadow: 3px 4px 0 rgba(43, 38, 32, 0.1);
+    padding: 0.9rem 1.05rem;
+    font-family: 'Source Serif 4', Georgia, serif;
+    font-size: 0.93rem;
+    line-height: 1.45;
+    color: var(--ink);
+  }
+
+  .def-popover.visible { display: block; }
+
+  .def-phonetic {
+    font-family: 'IBM Plex Mono', monospace;
+    color: var(--ink-soft);
+    font-size: 0.8rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .def-pos {
+    font-family: 'IBM Plex Mono', monospace;
+    font-style: italic;
+    color: var(--forest);
+    font-size: 0.78rem;
+    margin-top: 0.6rem;
+  }
+
+  .def-pos:first-child { margin-top: 0; }
+  .def-text { margin: 0.2rem 0; }
+
+  .def-example {
+    color: var(--ink-soft);
+    font-style: italic;
+    font-size: 0.87rem;
+    margin: 0.1rem 0 0.3rem;
+  }
+
+  .def-loading, .def-error {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.85rem;
+    color: var(--ink-soft);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .word-tag { transition: none; }
+  }
+
+  @media (max-width: 480px) {
+    header h1 { font-size: 1.9rem; }
+    .wrap { padding: 2rem 1.1rem 3rem; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Commonplace</h1>
+    <p class="subhead" id="subhead">Loading your collection&hellip;</p>
+  </header>
+
+  <nav class="tabs" id="tabs">
+    <button data-kind="all" class="active">All (0)</button>
+    <button data-kind="quote">Quotes (0)</button>
+    <button data-kind="vocabulary">Vocabulary (0)</button>
+  </nav>
+
+  <div class="filters">
+    <input type="text" id="searchInput" placeholder="Search your commonplace book...">
+    <select id="bookSelect"><option value="">All books</option></select>
+  </div>
+
+  <div id="content"></div>
+</div>
+<script src="app.js"></script>
+</body>
+</html>
