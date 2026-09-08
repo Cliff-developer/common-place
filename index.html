@@ -129,15 +129,32 @@
     line-height: 1.6;
   }
 
-  .quote-card .cite {
+  .quote-card .cite-row {
     display: flex;
-    justify-content: flex-end;
+    justify-content: space-between;
+    align-items: center;
     border-top: 1px solid var(--rule);
     padding-top: 0.55rem;
+  }
+
+  .quote-card .cite {
     font-family: 'IBM Plex Mono', monospace;
     font-size: 0.78rem;
     color: var(--ink-soft);
   }
+
+  .share-btn {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.72rem;
+    background: none;
+    border: 1px solid var(--rule);
+    color: var(--ink-soft);
+    padding: 0.25rem 0.6rem;
+    border-radius: 2px;
+    cursor: pointer;
+  }
+
+  .share-btn:hover { border-color: var(--gold); color: var(--ink); }
 
   .vocab-group { margin-bottom: 2rem; }
 

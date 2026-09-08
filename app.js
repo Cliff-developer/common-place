@@ -77,6 +77,7 @@
     }
 
     let html = "";
+    shareRegistry = [];
     if (state.kind === "vocabulary") {
       const byBook = new Map();
       rows.forEach((r) => {
@@ -95,12 +96,16 @@
     } else {
       rows.forEach((r) => {
         if (r.kind === "quote") {
+          const idx = shareRegistry.length;
+          shareRegistry.push({ text: r.highlight_text, book: r.book });
           html +=
             '<div class="quote-card"><p class="text">' +
             escapeHtml(r.highlight_text) +
-            '</p><div class="cite">' +
+            '</p><div class="cite-row"><button class="share-btn" data-share-idx="' +
+            idx +
+            '">Share</button><div class="cite">' +
             escapeHtml(r.book) +
-            "</div></div>";
+            "</div></div></div>";
         } else {
           html +=
             '<div class="word-grid" style="margin-bottom:1.1rem;"><span class="word-tag" tabindex="0">' +
@@ -111,7 +116,10 @@
     }
     content.innerHTML = html;
     attachWordTagHandlers();
+    attachShareHandlers();
   }
+
+  let shareRegistry = [];
 
   tabs.addEventListener("click", (e) => {
     const btn = e.target.closest("button");
@@ -295,6 +303,114 @@
     },
     true
   );
+
+  // ---------------------------------------------------------------------
+  // Share quote as image: renders a card (app name, quote, book) onto a
+  // canvas and downloads it as a PNG.
+  // ---------------------------------------------------------------------
+
+  function wrapText(ctx, text, maxWidth) {
+    const words = text.split(/\s+/);
+    const lines = [];
+    let current = "";
+    words.forEach((word) => {
+      const test = current ? current + " " + word : word;
+      if (ctx.measureText(test).width > maxWidth && current) {
+        lines.push(current);
+        current = word;
+      } else {
+        current = test;
+      }
+    });
+    if (current) lines.push(current);
+    return lines;
+  }
+
+  async function shareQuoteAsImage(text, book) {
+    if (document.fonts && document.fonts.ready) {
+      try {
+        await document.fonts.ready;
+      } catch (e) {
+        // Fonts may still be loading - proceed anyway with fallback fonts.
+      }
+    }
+
+    const WIDTH = 1080;
+    const PADDING = 90;
+    const MAX_TEXT_WIDTH = WIDTH - PADDING * 2;
+
+    const measure = document.createElement("canvas").getContext("2d");
+    let fontSize = 54;
+    measure.font = 'italic 400 ' + fontSize + 'px "Source Serif 4"';
+    let lines = wrapText(measure, text, MAX_TEXT_WIDTH);
+    while (lines.length > 12 && fontSize > 34) {
+      fontSize -= 4;
+      measure.font = 'italic 400 ' + fontSize + 'px "Source Serif 4"';
+      lines = wrapText(measure, text, MAX_TEXT_WIDTH);
+    }
+
+    const lineHeight = fontSize * 1.42;
+    const headerHeight = 150;
+    const citeHeight = 110;
+    const height = Math.round(headerHeight + lines.length * lineHeight + citeHeight + PADDING);
+
+    const canvas = document.createElement("canvas");
+    canvas.width = WIDTH;
+    canvas.height = height;
+    const ctx = canvas.getContext("2d");
+
+    ctx.fillStyle = "#ECE4D3";
+    ctx.fillRect(0, 0, WIDTH, height);
+
+    ctx.fillStyle = "#7C2D2D";
+    ctx.fillRect(0, 0, 14, height);
+
+    ctx.fillStyle = "#2B2620";
+    ctx.font = '600 40px "Fraunces"';
+    ctx.fillText("Commonplace", PADDING, 96);
+
+    ctx.strokeStyle = "#C8BB98";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(PADDING, headerHeight - 20);
+    ctx.lineTo(WIDTH - PADDING, headerHeight - 20);
+    ctx.stroke();
+
+    ctx.font = 'italic 400 ' + fontSize + 'px "Source Serif 4"';
+    ctx.fillStyle = "#2B2620";
+    let y = headerHeight + fontSize;
+    lines.forEach((line) => {
+      ctx.fillText(line, PADDING, y);
+      y += lineHeight;
+    });
+
+    ctx.font = 'italic 400 30px "IBM Plex Mono"';
+    ctx.fillStyle = "#6B6252";
+    ctx.textAlign = "right";
+    ctx.fillText("\u2014 " + book, WIDTH - PADDING, height - 50);
+    ctx.textAlign = "left";
+
+    canvas.toBlob((blob) => {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "commonplace-quote.png";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }, "image/png");
+  }
+
+  function attachShareHandlers() {
+    document.querySelectorAll(".share-btn").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const item = shareRegistry[Number(btn.dataset.shareIdx)];
+        if (item) shareQuoteAsImage(item.text, item.book);
+      });
+    });
+  }
 
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
