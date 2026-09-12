@@ -156,6 +156,55 @@
 
   .share-btn:hover { border-color: var(--gold); color: var(--ink); }
 
+  .lexicon-add {
+    display: flex;
+    gap: 0.6rem;
+    margin-bottom: 1.5rem;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  .lexicon-add input[type=text] {
+    flex: 1;
+    min-width: 200px;
+    padding: 0.65rem 0.9rem;
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: 2px;
+    font-family: inherit;
+    font-size: 0.9rem;
+    color: var(--ink);
+  }
+
+  .lexicon-add button {
+    padding: 0.65rem 1.1rem;
+    background: var(--ink);
+    color: var(--paper);
+    border: none;
+    border-radius: 2px;
+    font-family: inherit;
+    font-size: 0.85rem;
+    cursor: pointer;
+  }
+
+  .lex-tag { position: relative; padding-right: 1.9rem; }
+
+  .lex-delete {
+    position: absolute;
+    right: 0.35rem;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: var(--ink-soft);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.95rem;
+    cursor: pointer;
+    line-height: 1;
+    padding: 0 0.2rem;
+  }
+
+  .lex-delete:hover { color: var(--oxblood); }
+
   .vocab-group { margin-bottom: 2rem; }
 
   .vocab-group h2 {
@@ -267,6 +316,7 @@
     <button data-kind="all" class="active">All (0)</button>
     <button data-kind="quote">Quotes (0)</button>
     <button data-kind="vocabulary">Vocabulary (0)</button>
+    <button data-kind="lexicon">My Lexicon (0)</button>
   </nav>
 
   <div class="filters">

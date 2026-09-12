@@ -50,10 +50,76 @@
     });
   }
 
+  // ---------------------------------------------------------------------
+  // My Lexicon: words you type in yourself, from outside your books.
+  // Stored in localStorage - completely separate from data.json, so
+  // regenerating that file from new Moon Reader exports never touches it.
+  // ---------------------------------------------------------------------
+
+  const LEXICON_KEY = "myLexicon";
+
+  function getLexicon() {
+    try {
+      const raw = localStorage.getItem(LEXICON_KEY);
+      return raw ? JSON.parse(raw) : [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function saveLexicon(words) {
+    try {
+      localStorage.setItem(LEXICON_KEY, JSON.stringify(words));
+    } catch (e) {
+      // Storage full or unavailable - the word just won't persist.
+    }
+  }
+
+  function addLexiconWord(word) {
+    const key = word.trim();
+    if (!key) return;
+    const words = getLexicon();
+    const exists = words.some((w) => w.toLowerCase() === key.toLowerCase());
+    if (!exists) {
+      words.push(key);
+      words.sort((a, b) => a.localeCompare(b));
+      saveLexicon(words);
+    }
+  }
+
+  function removeLexiconWord(word) {
+    saveLexicon(getLexicon().filter((w) => w !== word));
+  }
+
+  function attachLexiconHandlers() {
+    const addBtn = document.getElementById("lexiconAddBtn");
+    const input = document.getElementById("lexiconInput");
+    if (addBtn && input) {
+      const doAdd = () => {
+        const word = input.value.trim();
+        if (!word) return;
+        addLexiconWord(word);
+        render();
+      };
+      addBtn.addEventListener("click", doAdd);
+      input.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") doAdd();
+      });
+    }
+    document.querySelectorAll(".lex-delete").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        removeLexiconWord(btn.dataset.word);
+        render();
+      });
+    });
+  }
+
   function render() {
     const matching = getFiltered();
     const quoteCount = matching.filter((r) => r.kind === "quote").length;
     const vocabCount = matching.filter((r) => r.kind === "vocabulary").length;
+    const lexiconWords = getLexicon();
 
     const totalQuotes = allData.filter((r) => r.kind === "quote").length;
     const totalVocab = allData.filter((r) => r.kind === "vocabulary").length;
@@ -64,10 +130,58 @@
     tabs.querySelectorAll("button").forEach((btn) => {
       const k = btn.dataset.kind;
       btn.classList.toggle("active", k === state.kind);
-      const count = k === "all" ? quoteCount + vocabCount : k === "quote" ? quoteCount : vocabCount;
-      const label = k === "all" ? "All" : k === "quote" ? "Quotes" : "Vocabulary";
+      let count, label;
+      if (k === "all") { count = quoteCount + vocabCount; label = "All"; }
+      else if (k === "quote") { count = quoteCount; label = "Quotes"; }
+      else if (k === "vocabulary") { count = vocabCount; label = "Vocabulary"; }
+      else { count = lexiconWords.length; label = "My Lexicon"; }
       btn.textContent = label + " (" + count + ")";
     });
+
+    // The book filter doesn't apply to your own typed-in lexicon.
+    bookSelect.style.display = state.kind === "lexicon" ? "none" : "";
+    searchInput.placeholder =
+      state.kind === "lexicon" ? "Search your lexicon..." : "Search your commonplace book...";
+
+    let html = "";
+    shareRegistry = [];
+
+    if (state.kind === "lexicon") {
+      const filtered = state.q
+        ? lexiconWords.filter((w) => w.toLowerCase().includes(state.q.toLowerCase()))
+        : lexiconWords;
+
+      html +=
+        '<div class="lexicon-add">' +
+        '<input type="text" id="lexiconInput" placeholder="Add a word to your lexicon..." autocomplete="off">' +
+        '<button id="lexiconAddBtn">Add</button>' +
+        "</div>";
+
+      if (!filtered.length) {
+        html +=
+          '<p class="empty">' +
+          (lexiconWords.length ? "No matches." : "No words yet \u2014 type one above to start your lexicon.") +
+          "</p>";
+      } else {
+        html += '<div class="word-grid">';
+        filtered.forEach((w) => {
+          html +=
+            '<span class="word-tag lex-tag" data-word="' +
+            escapeHtml(w) +
+            '" tabindex="0">' +
+            escapeHtml(w) +
+            '<button class="lex-delete" data-word="' +
+            escapeHtml(w) +
+            '" title="Remove">\u00d7</button></span>';
+        });
+        html += "</div>";
+      }
+
+      content.innerHTML = html;
+      attachWordTagHandlers();
+      attachLexiconHandlers();
+      return;
+    }
 
     const rows = state.kind === "all" ? matching : matching.filter((r) => r.kind === state.kind);
 
@@ -76,8 +190,6 @@
       return;
     }
 
-    let html = "";
-    shareRegistry = [];
     if (state.kind === "vocabulary") {
       const byBook = new Map();
       rows.forEach((r) => {
@@ -89,7 +201,12 @@
         if (!state.book) html += "<h2>" + escapeHtml(book) + "</h2>";
         html += '<div class="word-grid">';
         words.forEach((w) => {
-          html += '<span class="word-tag" tabindex="0">' + escapeHtml(w.highlight_text) + "</span>";
+          html +=
+            '<span class="word-tag" data-word="' +
+            escapeHtml(w.highlight_text) +
+            '" tabindex="0">' +
+            escapeHtml(w.highlight_text) +
+            "</span>";
         });
         html += "</div></div>";
       });
@@ -108,7 +225,9 @@
             "</div></div></div>";
         } else {
           html +=
-            '<div class="word-grid" style="margin-bottom:1.1rem;"><span class="word-tag" tabindex="0">' +
+            '<div class="word-grid" style="margin-bottom:1.1rem;"><span class="word-tag" data-word="' +
+            escapeHtml(r.highlight_text) +
+            '" tabindex="0">' +
             escapeHtml(r.highlight_text) +
             "</span></div>";
         }
@@ -264,7 +383,7 @@
   }
 
   function showFor(tag) {
-    const word = tag.textContent.trim();
+    const word = tag.dataset.word || tag.textContent.trim();
     activeTag = tag;
     position(tag);
     popover.classList.add("visible");
@@ -282,6 +401,7 @@
   function attachWordTagHandlers() {
     document.querySelectorAll(".word-tag").forEach((tag) => {
       tag.addEventListener("click", (e) => {
+        if (e.target.classList.contains("lex-delete")) return;
         e.stopPropagation();
         if (activeTag === tag && popover.classList.contains("visible")) hide();
         else showFor(tag);
